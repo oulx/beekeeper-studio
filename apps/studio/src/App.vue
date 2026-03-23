@@ -13,9 +13,6 @@
           @databaseSelected="databaseSelected"
           v-else
         />
-        <auto-updater />
-        <notification-manager />
-        <upgrade-required-modal />
       </template>
     </div>
     <portal-target
@@ -55,14 +52,12 @@ import { mapGetters, mapState } from 'vuex'
 import Titlebar from './components/Titlebar.vue'
 import CoreInterface from './components/CoreInterface.vue'
 import ConnectionInterface from './components/ConnectionInterface.vue'
-import AutoUpdater from './components/AutoUpdater.vue'
 import DataManager from './components/data/DataManager.vue'
 import querystring from 'query-string'
 import ConfigurationWarningModal from '@/components/ConfigurationWarningModal.vue'
 
 import WorkspaceCreateModal from '@/components/data/WorkspaceCreateModal.vue'
 import WorkspaceRenameModal from '@/components/data/WorkspaceRenameModal.vue'
-import UpgradeRequiredModal from './components/upsell/UpgradeRequiredModal.vue'
 import WorkspaceSignInModal from '@/components/data/WorkspaceSignInModal.vue'
 import ImportQueriesModal from '@/components/data/ImportQueriesModal.vue'
 import ImportConnectionsModal from '@/components/data/ImportConnectionsModal.vue'
@@ -70,7 +65,6 @@ import TimeAgo from 'javascript-time-ago'
 import EnterLicenseModal from './components/ultimate/EnterLicenseModal.vue'
 import { AppEvent } from './common/AppEvent'
 import globals from './common/globals'
-import NotificationManager from './components/NotificationManager.vue'
 import Noty from 'noty';
 import ConfirmationModalManager from '@/components/common/modals/ConfirmationModalManager.vue'
 import Dropzone from '@/components/Dropzone.vue'
@@ -94,8 +88,8 @@ export default Vue.extend({
   name: 'App',
   mixins: [assignContextMenuToAllInputs],
   components: {
-    CoreInterface, ConnectionInterface, Titlebar, AutoUpdater, NotificationManager,
-    DataManager, UpgradeRequiredModal, ConfirmationModalManager, Dropzone,
+    CoreInterface, ConnectionInterface, Titlebar,
+    DataManager, ConfirmationModalManager, Dropzone,
     UtilDiedModal, WorkspaceSignInModal, ImportQueriesModal, ImportConnectionsModal,
     EnterLicenseModal, TrialExpiredModal, LicenseExpiredModal,
     LifetimeLicenseExpiredModal, WorkspaceCreateModal, WorkspaceRenameModal,

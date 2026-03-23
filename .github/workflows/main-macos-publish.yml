@@ -1,0 +1,121 @@
+name: Main macOS Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'apps/sqltools/**'
+
+jobs:
+  build_macos_x64:
+    name: Build macOS and publish release
+    runs-on: macos-14
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v1
+
+      - name: Install python 3.11 (mac)
+        run: |
+          # Install Python 3.11
+          brew install python@3.11
+          # Add Python 3.11 to PATH
+          echo "/opt/homebrew/opt/python@3.11/libexec/bin" >> $GITHUB_PATH
+          export PATH="/opt/homebrew/opt/python@3.11/libexec/bin:$PATH"
+          export PYTHON_PATH="/opt/homebrew/opt/python@3.11/libexec/bin/python3"
+
+      - name: Verify Python Version
+        run: |
+          PYTHON_VERSION=$(python3 --version | cut -d " " -f 2)
+          echo "Installed Python version: $PYTHON_VERSION"
+          if [[ ! $PYTHON_VERSION == 3.11* ]]; then
+            echo "Error: Python version does not start with 3.11"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build macOS x64 app (no publish)
+        run: yarn run electron:build --mac --x64 --publish never
+        env:
+          PYTHON_PATH: '/opt/homebrew/opt/python@3.11/libexec/bin/python3'
+          PYTHONPATH: '/opt/homebrew/opt/python@3.11/libexec/bin/python3'
+          USE_SYSTEM_FPM: true
+
+      - name: Create or update GitHub release and upload macOS assets
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs')
+            const path = require('path')
+
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const tag = process.env.RELEASE_TAG
+            let release
+
+            try {
+              release = await github.rest.repos.getReleaseByTag({ owner, repo, tag })
+              release = release.data
+            } catch (err) {
+              if (err.status === 404) {
+                release = (await github.rest.repos.createRelease({
+                  owner,
+                  repo,
+                  tag_name: tag,
+                  name: tag,
+                  draft: false,
+                  prerelease: false,
+                  body: 'Automated macOS x64 build from master branch.'
+                })).data
+              } else {
+                throw err
+              }
+            }
+
+            const distDir = path.join(process.cwd(), 'apps', 'studio', 'dist_electron')
+            if (!fs.existsSync(distDir)) {
+              throw new Error(`Cannot find dist dir: ${distDir}`)
+            }
+
+            const assets = fs.readdirSync(distDir).filter(filename => {
+              return ['.dmg', '.zip', '.tar.gz', '.yml', '.pkg', '.appimage'].some(ext => filename.endsWith(ext))
+            })
+
+            if (assets.length === 0) {
+              throw new Error('No build artifacts found in ' + distDir)
+            }
+
+            for (const filename of assets) {
+              const filePath = path.join(distDir, filename)
+
+              // Delete existing asset with same name first (if exists)
+              const existingAssets = await github.rest.repos.listReleaseAssets({ owner, repo, release_id: release.id })
+              const existing = existingAssets.data.find(a => a.name === filename)
+              if (existing) await github.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: existing.id })
+
+              const fileData = fs.readFileSync(filePath)
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: release.id,
+                name: filename,
+                data: fileData,
+                headers: {
+                  'content-type': 'application/octet-stream',
+                  'content-length': fileData.length
+                }
+              })
+              core.info(`Uploaded ${filename}`)
+            }
