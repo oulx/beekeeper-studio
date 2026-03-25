@@ -52,19 +52,16 @@ export const LicenseModule: Module<State, RootState>  = {
       return Math.round((validUntil - now) / oneDay);
     },
     noLicensesFound(state) {
-      return state.licenses.length === 0
+      return false
     },
     isUltimate(state) {
-      if (!state) return false
-      return state.status.isUltimate
+      return true
     },
     isCommunity(state) {
-      if (!state) return true
-      return state.status.isCommunity
+      return false
     },
     isTrial(state) {
-      if (!state) return true
-      return state.status.isTrial
+      return false
     },
     isValidStateExpired(state) {
       // this means a license with lifetime perms, but is no longer valid for software updates

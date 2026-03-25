@@ -23,15 +23,15 @@ export class LicenseStatus {
   filePath?: string = undefined
 
   get isUltimate() {
-    return this.edition === "ultimate";
+    return true;
   }
 
   get isCommunity() {
-    return this.edition === "community";
+    return false;
   }
 
   get isTrial() {
-    return this.license?.licenseType === "TrialLicense";
+    return false
   }
 
   get isValidDateExpired() {
@@ -43,6 +43,6 @@ export class LicenseStatus {
   }
 
   get maxAllowedVersion() {
-    return parseVersion(this.license?.maxAllowedAppRelease?.tagName?.slice(1) ?? '0.0.0');
+    return parseVersion('0.0.0');
   }
 }
